@@ -81,9 +81,9 @@ The processed videos are stored in the `data/output/` directory. You can access 
 
 1. **Video 1 (pushups_output.mp4):**
    - Preview:
-     ![Video 1 Preview](data/output/pushups_output.mp4)
+     ![Video 1 Preview](data/output/pushups_output.gif)
 
 2. **Video 2 (squats_output.mp4):**
    - Preview:
-     ![Video 2 Preview](data/output/squats_output.mp4)
+     ![Video 2 Preview](data/output/squats_output.gif)
 
