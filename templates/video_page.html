@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Processing App</title>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+</head>
+<body>
+<h1>Video Processing App</h1>
+
+<form id="upload-form" action="/uploadfile/" method="post" enctype="multipart/form-data">
+    <label for="file">Upload Video:</label>
+    <input type="file" name="file" accept="video/*">
+    <input type="submit" value="Process">
+</form>
+
+{% if processed_video_path %}
+<h2>Processed Video:</h2>
+<video id="processed-video" width="400" controls>
+    <source src="{{ url_for('stream_processed_video') }}" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+<a id="download-link" href="{{ url_for('download_processed_video') }}" download>Download Processed Video</a>
+{% endif %}
+
+<script>
+    $(document).ready(function () {
+        const socket = new WebSocket("ws://" + window.location.host + "/ws");
+
+        $("#upload-form").submit(function (event) {
+            event.preventDefault();
+            var form = $(this);
+            var url = form.attr('action');
+
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: new FormData(form[0]),
+                processData: false,
+                contentType: false,
+                success: function (data) {
+                    console.log("Video processing started");
+                    socket.send("start_processing");
+                },
+                error: function (error) {
+                    console.log("Error processing video:", error);
+                }
+            });
+        });
+
+        socket.onmessage = function (event) {
+            const processed_video_path = event.data;
+
+            $("#processed-video").attr("src", "/stream_processed_video/");
+            $("#download-link").attr("href", "/download_processed_video/");
+        };
+    });
+</script>
+</body>
+</html>
