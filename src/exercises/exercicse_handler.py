@@ -20,7 +20,7 @@ class ExercisePoses:
             'pushup': {
                 'left_points_idx': [6, 8, 10],
                 'right_points_idx': [5, 7, 9],
-                'maintaining': 140,
+                'maintaining': 70,
                 'relaxing': 120,
                 'concerned_skeletons_idx': [(6, 12, 14), (5, 11, 13), (5, 7, 9), (6, 8, 10), (12, 14, 16), (11, 13, 15)]
             },

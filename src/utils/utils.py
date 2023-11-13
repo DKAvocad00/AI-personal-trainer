@@ -15,10 +15,14 @@ class PreprocessVideo:
         self.counter = 0
         self.prev_time = time.time()
         self.fps = 0
+        self.reaching_angle = False
 
     def repetition_counter(self, current_angle, start_angle, end_angle):
+
         if current_angle < end_angle:
             self.reaching = True
+            if current_angle < end_angle - 15:
+                self.reaching_angle = True
         if current_angle > start_angle:
             self.reaching = False
 
@@ -28,6 +32,7 @@ class PreprocessVideo:
                 self.state_keep = True
             if not self.reaching and self.state_keep:
                 self.counter += 1
+                self.reaching_angle = False
                 self.state_keep = False
 
         return self.counter
@@ -41,8 +46,8 @@ class PreprocessVideo:
     def draw_info(self, img, exercise_name):
         img_y, img_x, _ = img.shape
 
-        cv2.rectangle(img, (30, 25), (350, 200), (254, 254, 235), cv2.FILLED)
-        cv2.rectangle(img, (30, 25), (350, 200), (253, 248, 134), 2, cv2.LINE_AA)
+        cv2.rectangle(img, (30, 25), (350, 220), (254, 254, 235), cv2.FILLED)
+        cv2.rectangle(img, (30, 25), (350, 220), (253, 248, 134), 2, cv2.LINE_AA)
 
         text_size = cv2.getTextSize(exercise_name, cv2.FONT_HERSHEY_SIMPLEX, 1.5, 3)[0]
         text_x = 40
@@ -57,6 +62,15 @@ class PreprocessVideo:
         fps_x = count_x
         fps_y = count_y + text_size[1] + 10
         cv2.putText(img, f"FPS: {self.fps:.2f}", (fps_x, fps_y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 170, 24), 2)
+
+        info_x = fps_x
+        info_y = fps_y + text_size[1] + 10
+
+        if self.reaching_angle:
+            cv2.putText(img, f"INFO: MAKE HIRE", (info_x, info_y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        else:
+            cv2.putText(img, f"INFO: Everything good", (info_x, info_y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0),
+                        2)
 
 
 def load_model(model):

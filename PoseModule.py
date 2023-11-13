@@ -1,4 +1,4 @@
-from starlette.responses import StreamingResponse, FileResponse
+from starlette.responses import FileResponse
 from pathlib import Path
 from src.utils.utils import *
 from src.utils.pose_model import PoseDetector

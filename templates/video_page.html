@@ -90,9 +90,6 @@
                 contentType: false,
                 success: function (data) {
                     console.log("Video processing started");
-                    var processedVideoPath = data.processed_video_path;
-                    $("#processed-video source").attr("src", processedVideoPath);
-                    $("#processed-video")[0].load();
                 },
                 error: function (error) {
                     console.log("Error processing video:", error);
