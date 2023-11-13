@@ -1,40 +1,45 @@
-
 from starlette.responses import StreamingResponse, FileResponse
-
+from pathlib import Path
 from src.utils.utils import *
 from src.utils.pose_model import PoseDetector
 from src.exercises.exercicse_handler import ExercisePoses
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 import cv2
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+app.mount("/data", StaticFiles(directory="data"), name="data")
+
+
+class Config:
+    input_video_path = "data/input/input.mp4"
+    output_video_path = "data/output/output.mp4"
+    allowed_video_types = {"video/mp4", "video/quicktime", "video/x-msvideo"}
 
 
 class VideoProcessor:
-    def __init__(self):
-        self.input_video_path = "data/input/input.mp4"
-        self.output_video_path = "data/output/output.mp4"
+    def __init__(self, input_video_path: Path = Config.input_video_path,
+                 output_video_path: Path = Config.output_video_path):
+        self.input_video_path = input_video_path
+        self.output_video_path = output_video_path
+        self.exercise_name = "automatic"
 
-    async def process_video(self) -> None:
+    async def process_video(self, mode="automatic") -> None:
         pose_key_point_frames = []
-        exercise_name = "detection"
+        self.exercise_name = mode
         cap = cv2.VideoCapture(self.input_video_path)
         detector = PoseDetector()
         preprocess_instance = PreprocessVideo()
         detect_model, idx_2_category = load_model(detector.model)
 
-        output_width = 1280
-        output_height = 720
-        output_fps = 30.0
-
-        out = cv2.VideoWriter(self.output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), output_fps,
-                              (output_width, output_height))
+        out = cv2.VideoWriter(self.output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), 30.0,
+                              (1280, 720))
 
         while cap.isOpened():
             success, img = cap.read()
@@ -46,15 +51,16 @@ class VideoProcessor:
             img = cv2.resize(img, (1280, 720))
             results = detector.findPose(img)
             landmark_list = detector.findLandmarks()
-            pose_key_point_frames.append(landmark_list.tolist())
 
-            if len(pose_key_point_frames) == 5:
-                exercise_name = pose_detect(detect_model, idx_2_category, pose_key_point_frames)
-                del pose_key_point_frames[0]
+            if mode == "automatic":
+                pose_key_point_frames.append(landmark_list.tolist())
+                if len(pose_key_point_frames) == 5:
+                    self.exercise_name = pose_detect(detect_model, idx_2_category, pose_key_point_frames)
+                    del pose_key_point_frames[0]
 
-            ExercisePoses(exercise_name, img, detector, preprocess_instance, results)
+            ExercisePoses(self.exercise_name, img, detector, preprocess_instance, results)
 
-            preprocess_instance.draw_info(img, exercise_name)
+            preprocess_instance.draw_info(img, self.exercise_name)
 
             out.write(img)
 
@@ -69,10 +75,8 @@ video_processor = VideoProcessor()
 
 
 @app.post("/uploadfile/")
-async def process_video(file: UploadFile = File(...)):
-    allowed_video_types = {"video/mp4", "video/quicktime", "video/x-msvideo"}
-
-    if file.content_type not in allowed_video_types:
+async def process_video(file: UploadFile = File(...), mode: str = Form("automatic")):
+    if file.content_type not in Config.allowed_video_types:
         raise HTTPException(status_code=400, detail="Invalid file type, must be a video")
 
     if os.path.exists(video_processor.output_video_path):
@@ -81,11 +85,9 @@ async def process_video(file: UploadFile = File(...)):
     with open(video_processor.input_video_path, 'wb') as video_file:
         video_file.write(file.file.read())
 
-    await video_processor.process_video()
+    await video_processor.process_video(mode)
 
-    processed_video_path = video_processor.get_processed_video()
-
-    return JSONResponse(content={"processed_video_path": processed_video_path})
+    return JSONResponse(content={"processed_video_path": video_processor.get_processed_video(), "mode": mode})
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -98,9 +100,3 @@ async def read_root(request: Request):
 @app.get("/download_processed_video/")
 async def download_processed_video():
     return FileResponse(video_processor.get_processed_video(), media_type="video/mp4")
-
-
-@app.get("/stream_processed_video/")
-async def stream_processed_video():
-    file_path = video_processor.get_processed_video()
-    return StreamingResponse(open(file_path, "rb"), media_type="video/mp4")

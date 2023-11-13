@@ -94,10 +94,10 @@ def draw_line(img, detector, points):
         x2, y2 = key_points[1][0]
         x3, y3 = key_points[2][0]
 
-        cv2.line(img, (x1, y1), (x2, y2), (253, 248, 134), 1)
-        cv2.line(img, (x3, y3), (x2, y2), (253, 248, 134), 1)
-        cv2.circle(img, (x1, y1), 8, (254, 254, 235), cv2.FILLED)
-        cv2.circle(img, (x2, y2), 8, (254, 254, 235), cv2.FILLED)
-        cv2.circle(img, (x3, y3), 8, (254, 254, 235), cv2.FILLED)
+        cv2.line(img, (x1, y1), (x2, y2), (253, 248, 134), 2)
+        cv2.line(img, (x3, y3), (x2, y2), (253, 248, 134), 2)
+        cv2.circle(img, (x1, y1), 6, (254, 254, 235), cv2.FILLED)
+        cv2.circle(img, (x2, y2), 6, (254, 254, 235), cv2.FILLED)
+        cv2.circle(img, (x3, y3), 6, (254, 254, 235), cv2.FILLED)
 
     return img

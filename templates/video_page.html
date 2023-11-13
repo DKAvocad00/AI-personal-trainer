@@ -1,58 +1,104 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Video Processing App</title>
+    <title>AI Personal Trainer</title>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+
+        h1, h2 {
+            color: #444;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1em;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="file"],
+        button {
+            padding: 0.5em;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            background-color: #008CBA; /* Blue */
+            color: white;
+            cursor: pointer;
+        }
+
+        input[type="file"]:hover,
+        button:hover {
+            background-color: #007B9A; /* Darker blue */
+        }
+
+        video {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body>
-<h1>Video Processing App</h1>
+<h1>AI Personal Trainer</h1>
 
 <form id="upload-form" action="/uploadfile/" method="post" enctype="multipart/form-data">
     <label for="file">Upload Video:</label>
     <input type="file" name="file" accept="video/*">
-    <input type="submit" value="Process">
+
+    <label><input type="radio" name="exercise" value="automatic" checked> Automatic</label>
+    <label><input type="radio" name="exercise" value="pushup"> Pushup</label>
+    <label><input type="radio" name="exercise" value="squat"> Squat</label>
+    <label><input type="radio" name="exercise" value="situp"> Situp</label>
+
+    <button type="button" id="process-button">Process</button>
 </form>
 
-{% if processed_video_path %}
-<h2>Processed Video:</h2>
-<video id="processed-video" width="400" controls>
-    <source src="{{ url_for('stream_processed_video') }}" type="video/mp4">
-    Your browser does not support the video tag.
-</video>
+<h2>Download Processed Video:</h2>
 <a id="download-link" href="{{ url_for('download_processed_video') }}" download>Download Processed Video</a>
-{% endif %}
 
 <script>
     $(document).ready(function () {
-        const socket = new WebSocket("ws://" + window.location.host + "/ws");
+        $("#process-button").click(function () {
+            var form = $("#upload-form")[0];
+            var formData = new FormData(form);
 
-        $("#upload-form").submit(function (event) {
-            event.preventDefault();
-            var form = $(this);
-            var url = form.attr('action');
+            var selectedMode = $("input[name='exercise']:checked").val();
+            formData.append("mode", selectedMode);
 
             $.ajax({
                 type: "POST",
-                url: url,
-                data: new FormData(form[0]),
+                url: "/uploadfile/",
+                data: formData,
                 processData: false,
                 contentType: false,
                 success: function (data) {
                     console.log("Video processing started");
-                    socket.send("start_processing");
+                    var processedVideoPath = data.processed_video_path;
+                    $("#processed-video source").attr("src", processedVideoPath);
+                    $("#processed-video")[0].load();
                 },
                 error: function (error) {
                     console.log("Error processing video:", error);
                 }
             });
         });
-
-        socket.onmessage = function (event) {
-            const processed_video_path = event.data;
-
-            $("#processed-video").attr("src", "/stream_processed_video/");
-            $("#download-link").attr("href", "/download_processed_video/");
-        };
     });
 </script>
 </body>
